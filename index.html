@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DompetKu Pro - Ultimate Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js untuk Grafik -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #e5e7eb; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .bottom-sheet {
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .bottom-sheet.open { transform: translateY(0); }
+        .overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .overlay.open { opacity: 1; pointer-events: auto; }
+        input[type="radio"]:checked + .account-label {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased h-screen flex justify-center items-center overflow-hidden">
+
+    <div class="w-full max-w-md h-full sm:h-[880px] sm:max-h-[96vh] bg-gray-50 sm:rounded-[40px] sm:shadow-2xl relative overflow-hidden flex flex-col">
+        
+        <!-- Header & Balance Section -->
+        <div class="bg-gradient-to-br from-brand-600 via-brand-500 to-blue-400 p-5 pt-6 rounded-b-[2.5rem] shadow-lg relative overflow-hidden shrink-0">
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+            
+            <div class="relative z-10 flex justify-between items-center mb-3">
+                <h1 class="text-white font-bold text-lg tracking-wide">DompetKu Pro</h1>
+                <div class="flex gap-1.5">
+                    <button onclick="openMenuModal()" class="w-8 h-8 rounded-full glass-card flex items-center justify-center text-white hover:bg-white/30 transition text-xs" title="Menu Tambahan">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <button onclick="openWalletModal()" class="w-8 h-8 rounded-full glass-card flex items-center justify-center text-white hover:bg-white/30 transition text-xs" title="Kelola Dompet">
+                        <i class="fa-solid fa-wallet"></i>
+                    </button>
+                    <button onclick="resetData()" class="w-8 h-8 rounded-full glass-card flex items-center justify-center text-white hover:bg-white/30 transition text-xs" title="Reset Data">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TOTAL KESELURUHAN -->
+            <div class="relative z-10 text-center mb-3">
+                <p class="text-brand-100 text-[10px] font-medium mb-0.5 uppercase tracking-wider">Total Uang Keseluruhan</p>
+                <h2 id="totalBalance" class="text-3xl font-extrabold text-white tracking-tight">Rp 0</h2>
+            </div>
+
+            <!-- DAFTAR KARTU DOMPET DI HEADER (Bisa Di-scroll Horizontal & Bisa Diklik untuk Filter) -->
+            <div class="relative z-10 flex gap-2 mb-3 overflow-x-auto pb-1" id="headerWalletsContainer"></div>
+
+            <!-- Budget Progress Bar -->
+            <div class="relative z-10 glass-card rounded-xl p-2.5">
+                <div class="flex justify-between items-center text-[10px] text-white mb-1">
+                    <span class="font-semibold"><i class="fa-solid fa-bullseye mr-1"></i> Target Anggaran Bulan Ini</span>
+                    <span id="budgetText">Rp 0 / Rp 0</span>
+                </div>
+                <div class="w-full bg-white/30 h-2 rounded-full overflow-hidden">
+                    <div id="budgetBar" class="bg-emerald-400 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-hidden flex flex-col p-4 pb-24">
+            
+            <!-- Filter Info & Search Bar -->
+            <div id="filterIndicator" class="hidden justify-between items-center bg-blue-100 text-blue-800 px-3 py-1.5 rounded-xl mb-2 text-xs font-semibold shrink-0">
+                <span id="filterText">Filter Aktif</span>
+                <button onclick="filterByAccount('all')" class="underline text-blue-600">Reset</button>
+            </div>
+
+            <div class="flex gap-1 mb-3 shrink-0">
+                <div class="flex bg-gray-200 p-1 rounded-xl flex-1">
+                    <button id="tabListBtn" onclick="switchTab('list')" class="flex-1 py-1.5 rounded-lg font-bold text-xs bg-white text-brand-600 shadow-sm transition-all">Riwayat</button>
+                    <button id="tabRecapBtn" onclick="switchTab('recap')" class="flex-1 py-1.5 rounded-lg font-bold text-xs text-gray-500 transition-all">Rekap</button>
+                    <button id="tabDebtBtn" onclick="switchTab('debt')" class="flex-1 py-1.5 rounded-lg font-bold text-xs text-gray-500 transition-all">Hutang</button>
+                    <button id="tabChartBtn" onclick="switchTab('chart')" class="flex-1 py-1.5 rounded-lg font-bold text-xs text-gray-500 transition-all">Grafik</button>
+                </div>
+            </div>
+
+            <!-- Search Bar for History -->
+            <div id="searchBoxContainer" class="mb-3 shrink-0">
+                <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="searchQuery" oninput="updateUI()" placeholder="Cari catatan transaksi..." class="w-full bg-white border border-gray-200 text-xs rounded-xl py-2 pl-9 pr-3 outline-none focus:border-brand-500 shadow-sm">
+                </div>
+            </div>
+
+            <!-- List View -->
+            <div id="viewList" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                <div id="transactionList" class="space-y-2"></div>
+                <div id="emptyState" class="hidden flex-col items-center justify-center py-10 opacity-50">
+                    <i class="fa-solid fa-receipt text-4xl mb-3 text-gray-400"></i>
+                    <p class="text-xs font-medium text-gray-500">Belum ada transaksi.</p>
+                </div>
+            </div>
+
+            <!-- Recap View -->
+            <div id="viewRecap" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+                <div class="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm space-y-2.5">
+                    <p class="font-bold text-xs text-gray-800"><i class="fa-solid fa-filter text-brand-500 mr-1"></i> Filter Periode Rekap</p>
+                    <div class="flex gap-2">
+                        <select id="recapYear" onchange="renderRecap()" class="flex-1 bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2 outline-none"></select>
+                        <select id="recapMonth" onchange="renderRecap()" class="flex-1 bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2 outline-none">
+                            <option value="all">Setahun Penuh</option>
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-2xl">
+                        <p class="text-[10px] text-emerald-600 font-bold uppercase">Total Pemasukan</p>
+                        <p id="recapIncome" class="font-extrabold text-emerald-700 text-sm mt-1">Rp 0</p>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl">
+                        <p class="text-[10px] text-rose-600 font-bold uppercase">Total Pengeluaran</p>
+                        <p id="recapExpense" class="font-extrabold text-rose-700 text-sm mt-1">Rp 0</p>
+                    </div>
+                </div>
+                <div class="bg-blue-50 border border-blue-100 p-3 rounded-2xl flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] text-blue-600 font-bold uppercase">Selisih Bersih (Netto)</p>
+                        <p id="recapNet" class="font-extrabold text-blue-700 text-sm mt-0.5">Rp 0</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs"><i class="fa-solid fa-scale-balanced"></i></div>
+                </div>
+
+                <div class="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm space-y-2">
+                    <p class="font-bold text-xs text-gray-800">Rincian Pengeluaran per Kategori</p>
+                    <div id="recapCategoryList" class="space-y-1.5"></div>
+                </div>
+            </div>
+
+            <!-- Debt View -->
+            <div id="viewDebt" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+                <button onclick="openDebtModal()" class="w-full bg-brand-50 border border-brand-200 text-brand-600 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition">
+                    <i class="fa-solid fa-plus-circle"></i> Catat Hutang / Piutang Baru
+                </button>
+                <div id="debtListContainer" class="space-y-2.5"></div>
+                <div id="emptyDebtState" class="hidden text-center py-10 opacity-50 text-xs text-gray-500">Belum ada catatan hutang.</div>
+            </div>
+
+            <!-- Chart View -->
+            <div id="viewChart" class="hidden flex-1 overflow-y-auto space-y-3">
+                <div class="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm space-y-2.5">
+                    <p class="font-bold text-xs text-gray-800"><i class="fa-solid fa-filter text-brand-500 mr-1"></i> Filter Periode Grafik</p>
+                    <div class="flex gap-2">
+                        <select id="chartYear" onchange="updateChart()" class="flex-1 bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2 outline-none"></select>
+                        <select id="chartMonth" onchange="updateChart()" class="flex-1 bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2 outline-none">
+                            <option value="all">Setahun Penuh</option>
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-800 text-center mb-3 text-xs">Pengeluaran per Kategori</h3>
+                    <div class="relative w-full aspect-square max-h-[200px]">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                    <div id="chartEmpty" class="hidden text-center text-xs text-gray-400 mt-4">Belum ada data pengeluaran.</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Floating Action Button -->
+        <button onclick="openModal()" class="absolute bottom-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white flex items-center gap-2 px-6 py-3.5 rounded-full shadow-xl hover:bg-black hover:scale-105 active:scale-95 transition-all z-20">
+            <i class="fa-solid fa-plus"></i>
+            <span class="font-bold text-xs">Catat Transaksi</span>
+        </button>
+
+        <!-- Overlays & Modals -->
+        <div id="modalOverlay" class="overlay absolute inset-0 bg-gray-900/40 backdrop-blur-sm z-30" onclick="closeAllModals()"></div>
+
+        <!-- 1. MODAL TAMBAH TRANSAKSI -->
+        <div id="addModal" class="bottom-sheet absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-40 p-5 pb-8 flex flex-col max-h-[90%]">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-3 shrink-0"></div>
+            
+            <div class="flex justify-center items-center mb-3 shrink-0 relative">
+                <h2 class="text-base font-bold text-gray-800">Catat Keuangan</h2>
+                <button onclick="closeAllModals()" type="button" class="absolute right-0 w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-gray-500"><i class="fa-solid fa-xmark text-xs"></i></button>
+            </div>
+
+            <form id="transactionForm" class="flex flex-col gap-3 overflow-y-auto px-1 pb-2">
+                
+                <div class="flex bg-gray-100 p-1 rounded-xl">
+                    <input type="radio" name="type" id="typeExpense" value="expense" class="hidden" checked onchange="handleTypeChange()">
+                    <label for="typeExpense" id="lblExpense" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-rose-600 transition-all">Keluar</label>
+                    
+                    <input type="radio" name="type" id="typeIncome" value="income" class="hidden" onchange="handleTypeChange()">
+                    <label for="typeIncome" id="lblIncome" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all">Masuk</label>
+                    
+                    <input type="radio" name="type" id="typeTransfer" value="transfer" class="hidden" onchange="handleTypeChange()">
+                    <label for="typeTransfer" id="lblTransfer" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all">Transfer</label>
+                </div>
+
+                <div id="normalAccountBox">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Pilih Dompet</label>
+                    <div id="accountRadioContainer" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+
+                <div id="transferAccountBox" class="hidden flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dari Dompet</label>
+                        <select id="transferFrom" class="w-full bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2.5 outline-none"></select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Ke Dompet</label>
+                        <select id="transferTo" class="w-full bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2.5 outline-none"></select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nominal (Rp)</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
+                        <input type="number" id="inputAmount" required inputmode="numeric" placeholder="0" class="w-full bg-gray-50 border border-gray-200 font-bold text-base rounded-xl py-2 pl-10 pr-3 outline-none focus:border-brand-500">
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tanggal</label>
+                        <input type="date" id="inputDate" required class="w-full bg-gray-50 border border-gray-200 font-semibold text-xs rounded-xl py-2 px-2.5 outline-none">
+                    </div>
+                    <div id="categoryBox" class="flex-1">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Kategori</label>
+                        <input type="text" id="inputCategory" placeholder="Makan, Gaji" class="w-full bg-gray-50 border border-gray-200 font-semibold text-xs rounded-xl py-2 px-2.5 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Keterangan (Opsional)</label>
+                    <input type="text" id="inputNote" placeholder="Catatan tambahan..." class="w-full bg-gray-50 border border-gray-200 font-medium text-xs rounded-xl py-2 px-2.5 outline-none">
+                </div>
+
+                <div class="flex gap-2 mt-1">
+                    <button type="button" onclick="closeAllModals()" class="w-1/3 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl text-xs active:scale-95 transition">Batal</button>
+                    <button type="submit" id="btnSubmit" class="w-2/3 bg-rose-500 text-white font-bold py-3 rounded-xl shadow-md text-xs active:scale-95 transition">Simpan</button>
+                </div>
+            </form>
+        </div>
+
+
+        <!-- 2. MODAL KELOLA DOMPET -->
+        <div id="walletModal" class="bottom-sheet absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-40 p-5 pb-8 flex flex-col max-h-[85%]">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-3 shrink-0"></div>
+            <div class="flex justify-center items-center mb-3 shrink-0 relative">
+                <h2 class="text-base font-bold text-gray-800">Kelola Saldo Dompet</h2>
+                <button onclick="closeAllModals()" type="button" class="absolute right-0 w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-gray-500"><i class="fa-solid fa-xmark text-xs"></i></button>
+            </div>
+            <form id="walletForm" class="bg-gray-50 p-3 rounded-2xl border border-gray-100 mb-3 shrink-0 flex gap-2">
+                <input type="text" id="newWalletName" required placeholder="Nama dompet (Cth: Bengkel)" class="flex-1 bg-white border border-gray-200 text-xs font-semibold rounded-xl px-3 py-2 outline-none">
+                <button type="submit" class="bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-xl">Tambah</button>
+            </form>
+            <div class="flex-1 overflow-y-auto space-y-2 pr-1">
+                <div id="walletListContainer" class="space-y-2"></div>
+            </div>
+        </div>
+
+
+        <!-- 3. MODAL MENU TAMBAHAN -->
+        <div id="menuModal" class="bottom-sheet absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-40 p-5 pb-8 flex flex-col max-h-[85%]">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-3 shrink-0"></div>
+            <div class="flex justify-center items-center mb-4 shrink-0 relative">
+                <h2 class="text-base font-bold text-gray-800">Pengaturan & Fitur Lain</h2>
+                <button onclick="closeAllModals()" type="button" class="absolute right-0 w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-gray-500"><i class="fa-solid fa-xmark text-xs"></i></button>
+            </div>
+            <div class="space-y-3 overflow-y-auto pb-2">
+                <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
+                    <p class="font-bold text-xs text-gray-800 mb-1"><i class="fa-solid fa-bullseye text-brand-500 mr-1"></i> Atur Anggaran Bulanan</p>
+                    <div class="flex gap-2 mt-2">
+                        <input type="number" id="inputMonthlyBudget" placeholder="Cth: 2000000" class="flex-1 bg-white border border-gray-200 text-xs font-semibold rounded-xl px-3 py-2 outline-none">
+                        <button onclick="saveBudget()" class="bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-xl">Simpan</button>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
+                    <p class="font-bold text-xs text-gray-800 mb-1"><i class="fa-solid fa-cloud-arrow-down text-emerald-500 mr-1"></i> Cadangkan & Pulihkan Data</p>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="exportData()" class="flex-1 bg-emerald-600 text-white font-bold text-xs py-2 rounded-xl"><i class="fa-solid fa-download mr-1"></i> Unduh File</button>
+                        <label class="flex-1 bg-blue-600 text-white font-bold text-xs py-2 rounded-xl text-center cursor-pointer">
+                            <i class="fa-solid fa-upload mr-1"></i> Pulihkan <input type="file" id="importFile" accept=".json" onchange="importData(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 4. MODAL HUTANG / PIUTANG -->
+        <div id="debtModal" class="bottom-sheet absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-40 p-5 pb-8 flex flex-col max-h-[85%]">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-3 shrink-0"></div>
+            <div class="flex justify-center items-center mb-3 shrink-0 relative">
+                <h2 class="text-base font-bold text-gray-800">Catat Hutang / Piutang</h2>
+                <button onclick="closeAllModals()" type="button" class="absolute right-0 w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-gray-500"><i class="fa-solid fa-xmark text-xs"></i></button>
+            </div>
+            <form id="debtForm" class="flex flex-col gap-3 overflow-y-auto px-1">
+                <div class="flex bg-gray-100 p-1 rounded-xl">
+                    <input type="radio" name="debtType" id="debtBorrow" value="borrow" class="hidden" checked>
+                    <label for="debtBorrow" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-rose-600">Kita Berhutang</label>
+                    <input type="radio" name="debtType" id="debtLend" value="lend" class="hidden">
+                    <label for="debtLend" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500">Orang Hutang ke Kita</label>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Orang / Sumber</label>
+                    <input type="text" id="debtName" required placeholder="Cth: Budi / Warung" class="w-full bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Jumlah (Rp)</label>
+                    <input type="number" id="debtAmount" required inputmode="numeric" placeholder="0" class="w-full bg-gray-50 border border-gray-200 text-xs font-bold rounded-xl p-2.5 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl text-xs mt-1">Simpan Catatan Hutang</button>
+            </form>
+        </div>
+
+        <!-- 5. MODAL RINCIAN TRANSAKSI (DETAIL) -->
+        <div id="detailModal" class="bottom-sheet absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-40 p-5 pb-8 flex flex-col max-h-[85%]">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-3 shrink-0"></div>
+            <div class="flex justify-center items-center mb-4 shrink-0 relative">
+                <h2 class="text-base font-bold text-gray-800">Rincian Transaksi</h2>
+                <button onclick="closeAllModals()" type="button" class="absolute right-0 w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-gray-500"><i class="fa-solid fa-xmark text-xs"></i></button>
+            </div>
+            <div class="space-y-3 overflow-y-auto pb-2 text-xs">
+                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                    <p id="detTypeBadge" class="inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] mb-1 uppercase"></p>
+                    <h3 id="detCategory" class="font-extrabold text-gray-800 text-base"></h3>
+                    <p id="detAmount" class="text-2xl font-black mt-1"></p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-2.5">
+                    <div class="flex justify-between border-b border-gray-200/50 pb-2">
+                        <span class="text-gray-400">Tanggal</span>
+                        <span id="detDate" class="font-bold text-gray-800"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200/50 pb-2">
+                        <span class="text-gray-400">Sumber / Dompet</span>
+                        <span id="detAccount" class="font-bold text-gray-800"></span>
+                    </div>
+                    <div class="flex justify-between pb-1">
+                        <span class="text-gray-400">Keterangan Catatan</span>
+                        <span id="detNote" class="font-medium text-gray-700 text-right max-w-[200px] break-words"></span>
+                    </div>
+                </div>
+                <button onclick="deleteTxFromDetail()" class="w-full bg-rose-50 text-rose-600 border border-rose-200 font-bold py-3 rounded-xl text-xs active:scale-95 transition">Hapus Transaksi Ini</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let accounts = JSON.parse(localStorage.getItem('dompet_pro_accounts')) || [
+            { id: 'bank', name: 'Saldo Bank', icon: 'fa-building-columns' },
+            { id: 'cash', name: 'Tunai (Cash)', icon: 'fa-money-bill-wave' },
+            { id: 'ewallet', name: 'E-Wallet', icon: 'fa-mobile-screen' },
+            { id: 'saving', name: 'Tabungan', icon: 'fa-piggy-bank' }
+        ];
+
+        let transactions = JSON.parse(localStorage.getItem('dompet_pro_tx')) || [];
+        let debts = JSON.parse(localStorage.getItem('dompet_pro_debts')) || [];
+        let monthlyBudget = parseInt(localStorage.getItem('dompet_pro_budget')) || 1500000;
+
+        let currentFilter = 'all';
+        let expenseChartInstance = null;
+        let selectedTxId = null;
+        const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
+
+        const monthNamesIndo = {
+            '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+            '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+            '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
+        };
+
+        function setDefaultDate() {
+            document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        function switchTab(tab) {
+            ['list', 'recap', 'debt', 'chart'].forEach(t => {
+                document.getElementById(`view${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
+                document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Btn`).className = "flex-1 py-1.5 rounded-lg font-bold text-xs text-gray-500 transition-all";
+            });
+            document.getElementById(`view${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.remove('hidden');
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}Btn`).className = "flex-1 py-1.5 rounded-lg font-bold text-xs bg-white text-brand-600 shadow-sm transition-all";
+            
+            document.getElementById('searchBoxContainer').style.display = (tab === 'list') ? 'block' : 'none';
+            if(tab === 'chart') initChartYears();
+            if(tab === 'debt') renderDebts();
+            if(tab === 'recap') initRecapYears();
+        }
+
+        function filterByAccount(accKey) {
+            currentFilter = accKey;
+            const indicator = document.getElementById('filterIndicator');
+            if (accKey === 'all') {
+                indicator.classList.add('hidden');
+            } else {
+                indicator.classList.remove('hidden');
+                let found = accounts.find(a => a.id === accKey);
+                document.getElementById('filterText').innerHTML = `Filter Dompet: <b>${found ? found.name : accKey}</b>`;
+            }
+            switchTab('list');
+            updateUI();
+        }
+
+        function handleTypeChange() {
+            const isExp = document.getElementById('typeExpense').checked;
+            const isInc = document.getElementById('typeIncome').checked;
+            const isTrf = document.getElementById('typeTransfer').checked;
+
+            const lblExp = document.getElementById('lblExpense');
+            const lblInc = document.getElementById('lblIncome');
+            const lblTrf = document.getElementById('lblTransfer');
+            const btnSubmit = document.getElementById('btnSubmit');
+
+            lblExp.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all";
+            lblInc.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all";
+            lblTrf.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all";
+
+            if (isExp) {
+                lblExp.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-rose-600 transition-all";
+                btnSubmit.className = "w-2/3 bg-rose-500 text-white font-bold py-3 rounded-xl shadow-md text-xs active:scale-95 transition";
+                btnSubmit.textContent = "Simpan Pengeluaran";
+            } else if (isInc) {
+                lblInc.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-emerald-600 transition-all";
+                btnSubmit.className = "w-2/3 bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-md text-xs active:scale-95 transition";
+                btnSubmit.textContent = "Simpan Pemasukan";
+            } else if (isTrf) {
+                lblTrf.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-blue-600 transition-all";
+                btnSubmit.className = "w-2/3 bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md text-xs active:scale-95 transition";
+                btnSubmit.textContent = "Proses Transfer";
+            }
+
+            document.getElementById('normalAccountBox').style.display = isTrf ? 'none' : 'block';
+            document.getElementById('transferAccountBox').style.display = isTrf ? 'flex' : 'none';
+            document.getElementById('categoryBox').style.display = isTrf ? 'none' : 'block';
+
+            if(isTrf) {
+                let optionsHtml = '';
+                accounts.forEach(a => { optionsHtml += `<option value="${a.id}">${a.name}</option>`; });
+                document.getElementById('transferFrom').innerHTML = optionsHtml;
+                document.getElementById('transferTo').innerHTML = optionsHtml;
+            }
+        }
+
+        function initRecapYears() {
+            const yearSelect = document.getElementById('recapYear');
+            let years = new Set();
+            transactions.forEach(t => { if(t.date) years.add(t.date.slice(0, 4)); });
+            let currentYearStr = new Date().getFullYear().toString();
+            years.add(currentYearStr);
+            
+            let sortedYears = Array.from(years).sort((a,b) => b - a);
+            yearSelect.innerHTML = '';
+            sortedYears.forEach(y => {
+                yearSelect.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+            });
+            yearSelect.value = currentYearStr;
+            renderRecap();
+        }
+
+        function renderRecap() {
+            const selectedYear = document.getElementById('recapYear').value;
+            const selectedMonth = document.getElementById('recapMonth').value;
+
+            let inc = 0, exp = 0;
+            let catMap = {};
+
+            transactions.forEach(t => {
+                if(!t.date) return;
+                const [y, m, d] = t.date.split('-');
+                if(y === selectedYear && (selectedMonth === 'all' || m === selectedMonth)) {
+                    if(t.type === 'income') inc += t.amount;
+                    if(t.type === 'expense') {
+                        exp += t.amount;
+                        catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+                    }
+                }
+            });
+
+            document.getElementById('recapIncome').textContent = formatter.format(inc);
+            document.getElementById('recapExpense').textContent = formatter.format(exp);
+            let net = inc - exp;
+            const netEl = document.getElementById('recapNet');
+            netEl.textContent = formatter.format(net);
+            netEl.className = net >= 0 ? "font-extrabold text-blue-700 text-sm mt-0.5" : "font-extrabold text-rose-700 text-sm mt-0.5";
+
+            const catListContainer = document.getElementById('recapCategoryList');
+            catListContainer.innerHTML = '';
+            const sortedCats = Object.entries(catMap).sort((a,b) => b[1] - a[1]);
+
+            if(sortedCats.length === 0) {
+                catListContainer.innerHTML = `<p class="text-[11px] text-gray-400 text-center py-3">Tidak ada pengeluaran pada periode ini.</p>`;
+            } else {
+                sortedCats.forEach(([cat, val]) => {
+                    catListContainer.insertAdjacentHTML('beforeend', `
+                        <div class="flex justify-between items-center text-xs py-1 border-b border-gray-50">
+                            <span class="font-medium text-gray-700">${cat}</span>
+                            <span class="font-bold text-gray-900">${formatter.format(val)}</span>
+                        </div>
+                    `);
+                });
+            }
+        }
+
+        function initChartYears() {
+            const yearSelect = document.getElementById('chartYear');
+            let years = new Set();
+            transactions.forEach(t => { if(t.date) years.add(t.date.slice(0, 4)); });
+            let currentYearStr = new Date().getFullYear().toString();
+            years.add(currentYearStr);
+            
+            let sortedYears = Array.from(years).sort((a,b) => b - a);
+            yearSelect.innerHTML = '';
+            sortedYears.forEach(y => {
+                yearSelect.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+            });
+            yearSelect.value = currentYearStr;
+            updateChart();
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            const chartEmpty = document.getElementById('chartEmpty');
+            
+            const selectedYear = document.getElementById('chartYear').value;
+            const selectedMonth = document.getElementById('chartMonth').value;
+
+            const expenses = transactions.filter(t => {
+                if(t.type !== 'expense' || !t.date) return false;
+                const [y, m, d] = t.date.split('-');
+                return (y === selectedYear && (selectedMonth === 'all' || m === selectedMonth));
+            });
+
+            if (expenses.length === 0) {
+                chartEmpty.classList.remove('hidden');
+                if (expenseChartInstance) { expenseChartInstance.destroy(); expenseChartInstance = null; }
+                return;
+            }
+            chartEmpty.classList.add('hidden');
+            
+            const catData = expenses.reduce((acc, curr) => { 
+                acc[curr.category] = (acc[curr.category]||0) + curr.amount; 
+                return acc; 
+            }, {});
+
+            if (expenseChartInstance) expenseChartInstance.destroy();
+            expenseChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(catData),
+                    datasets: [{ data: Object.values(catData), backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'], borderWidth: 2 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 6, font: { size: 10 } } } } }
+            });
+        }
+
+        function updateUI() {
+            let totalBalance = 0;
+            let accountBalances = {};
+            accounts.forEach(acc => { accountBalances[acc.id] = 0; });
+
+            transactions.forEach(t => {
+                let amt = t.amount;
+                if (t.type === 'transfer') {
+                    if (accountBalances[t.fromAccount] !== undefined) accountBalances[t.fromAccount] -= amt;
+                    if (accountBalances[t.toAccount] !== undefined) accountBalances[t.toAccount] += amt;
+                } else if (accountBalances[t.account] !== undefined) {
+                    if (t.type === 'income') accountBalances[t.account] += amt;
+                    else accountBalances[t.account] -= amt;
+                }
+            });
+
+            const searchQuery = document.getElementById('searchQuery').value.toLowerCase();
+            const filtered = transactions.filter(t => {
+                const matchAcc = (currentFilter === 'all' || t.account === currentFilter || (t.type === 'transfer' && (t.fromAccount === currentFilter || t.toAccount === currentFilter)));
+                const matchSearch = t.category.toLowerCase().includes(searchQuery) || (t.note && t.note.toLowerCase().includes(searchQuery));
+                return matchAcc && matchSearch;
+            });
+
+            const currentMonthStr = new Date().toISOString().slice(0, 7);
+            let monthlyExpense = 0;
+            transactions.forEach(t => {
+                if(t.type === 'expense' && t.date.startsWith(currentMonthStr)) monthlyExpense += t.amount;
+            });
+
+            document.getElementById('budgetText').textContent = `${formatter.format(monthlyExpense)} / ${formatter.format(monthlyBudget)}`;
+            let pct = Math.min(Math.round((monthlyExpense / monthlyBudget) * 100), 100);
+            const bar = document.getElementById('budgetBar');
+            bar.style.width = `${pct}%`;
+            bar.className = pct > 85 ? "bg-rose-500 h-full transition-all duration-500" : (pct > 60 ? "bg-amber-400 h-full transition-all duration-500" : "bg-emerald-400 h-full transition-all duration-500");
+
+            const listEl = document.getElementById('transactionList');
+            listEl.innerHTML = '';
+
+            if (filtered.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('emptyState').classList.add('flex');
+            } else {
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('emptyState').classList.remove('flex');
+
+                const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+                let lastMonthKey = '';
+
+                sorted.forEach(t => {
+                    const [y, m, d] = t.date.split('-');
+                    const monthKey = `${y}-${m}`;
+
+                    if (monthKey !== lastMonthKey) {
+                        lastMonthKey = monthKey;
+                        const monthName = monthNamesIndo[m] || m;
+                        const dividerHtml = `
+                            <div class="sticky top-0 bg-gray-100/90 backdrop-blur-sm py-1.5 px-3 rounded-lg my-2 flex items-center justify-between border border-gray-200/50 z-10">
+                                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider"><i class="fa-solid fa-calendar-days mr-1 text-brand-500"></i> ${monthName} ${y}</span>
+                            </div>
+                        `;
+                        listEl.insertAdjacentHTML('beforeend', dividerHtml);
+                    }
+
+                    const isIncome = t.type === 'income';
+                    const isTransfer = t.type === 'transfer';
+                    const iconBg = isTransfer ? 'bg-blue-100 text-blue-500' : (isIncome ? 'bg-emerald-100 text-emerald-500' : 'bg-rose-100 text-rose-500');
+                    
+                    let subtitle = '';
+                    if(isTransfer) {
+                        let fromObj = accounts.find(a => a.id === t.fromAccount)?.name || '';
+                        let toObj = accounts.find(a => a.id === t.toAccount)?.name || '';
+                        subtitle = `${fromObj} ➔ ${toObj}`;
+                    } else {
+                        let accObj = accounts.find(a => a.id === t.account)?.name || '';
+                        subtitle = accObj;
+                    }
+
+                    const amountColor = isTransfer ? 'text-blue-600' : (isIncome ? 'text-emerald-600' : 'text-gray-800');
+                    const sign = isTransfer ? '' : (isIncome ? '+' : '-');
+
+                    const html = `
+                        <div onclick="openDetailModal(${t.id})" class="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:bg-blue-50/40 active:scale-[0.98] transition">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-9 h-9 rounded-full ${iconBg} flex items-center justify-center text-xs shrink-0">
+                                    <i class="fa-solid ${isTransfer ? 'fa-arrow-right-arrow-left' : (isIncome ? 'fa-arrow-down' : 'fa-arrow-up')}"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-800 text-xs">${isTransfer ? 'Transfer Internal' : t.category}</p>
+                                    <p class="text-[9px] text-gray-400">${t.date} • ${subtitle}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold ${amountColor} text-xs">${sign}${formatter.format(t.amount).replace('Rp','').trim()}</p>
+                            </div>
+                        </div>
+                    `;
+                    listEl.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            Object.values(accountBalances).forEach(val => totalBalance += val);
+            document.getElementById('totalBalance').textContent = formatter.format(totalBalance);
+
+            localStorage.setItem('dompet_pro_tx', JSON.stringify(transactions));
+            localStorage.setItem('dompet_pro_accounts', JSON.stringify(accounts));
+            renderHeaderWallets(accountBalances);
+            renderWalletSettings(accountBalances);
+        }
+
+        // Render Kartu Dompet di Header (Bisa Diklik untuk Filter)
+        function renderHeaderWallets(balances) {
+            const container = document.getElementById('headerWalletsContainer');
+            container.innerHTML = '';
+            accounts.forEach(acc => {
+                const bal = balances[acc.id] || 0;
+                container.insertAdjacentHTML('beforeend', `
+                    <div onclick="filterByAccount('${acc.id}')" class="min-w-[120px] flex-1 glass-card rounded-xl p-2.5 cursor-pointer hover:bg-white/30 transition active:scale-95 text-center">
+                        <p class="text-brand-100 text-[9px] uppercase truncate mb-0.5"><i class="fa-solid ${acc.icon} mr-1"></i>${acc.name}</p>
+                        <p class="text-white font-bold text-xs truncate">${formatter.format(bal)}</p>
+                    </div>
+                `);
+            });
+        }
+
+        function renderWalletSettings(balances) {
+            const container = document.getElementById('walletListContainer');
+            container.innerHTML = '';
+            accounts.forEach(acc => {
+                const isProt = (acc.id === 'bank' || acc.id === 'cash');
+                const delBtn = isProt ? '' : `<button onclick="deleteWallet('${acc.id}')" class="text-red-400 p-2"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-blue-50 text-brand-600 flex items-center justify-center text-xs"><i class="fa-solid ${acc.icon}"></i></div>
+                            <div><p class="font-bold text-xs text-gray-800">${acc.name}</p><p class="text-[10px] font-extrabold text-brand-600">${formatter.format(balances[acc.id]||0)}</p></div>
+                        </div>
+                        ${delBtn}
+                    </div>
+                `);
+            });
+
+            const radioContainer = document.getElementById('accountRadioContainer');
+            radioContainer.innerHTML = '';
+            accounts.forEach((acc, idx) => {
+                radioContainer.insertAdjacentHTML('beforeend', `
+                    <div>
+                        <input type="radio" name="account" id="acc_${acc.id}" value="${acc.id}" class="hidden" ${idx===0?'checked':''}>
+                        <label for="acc_${acc.id}" class="account-label block w-full text-center py-2 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-[11px] cursor-pointer truncate px-1"><i class="fa-solid ${acc.icon} mr-1"></i>${acc.name}</label>
+                    </div>
+                `);
+            });
+        }
+
+        document.getElementById('transactionForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const amount = parseInt(document.getElementById('inputAmount').value);
+            const date = document.getElementById('inputDate').value;
+            const note = document.getElementById('inputNote').value;
+            if(!amount || !date) return;
+
+            let newTx = { id: Date.now(), type, amount, date, note };
+            if(type === 'transfer') {
+                newTx.fromAccount = document.getElementById('transferFrom').value;
+                newTx.toAccount = document.getElementById('transferTo').value;
+                newTx.category = 'Transfer Internal';
+                if(newTx.fromAccount === newTx.toAccount) { alert('Dompet asal dan tujuan tidak boleh sama!'); return; }
+            } else {
+                newTx.account = document.querySelector('input[name="account"]:checked').value;
+                newTx.category = document.getElementById('inputCategory').value || 'Umum';
+            }
+
+            transactions.push(newTx);
+            updateUI();
+            closeAllModals();
+            e.target.reset();
+            setDefaultDate();
+            handleTypeChange();
+        });
+
+        function renderDebts() {
+            const container = document.getElementById('debtListContainer');
+            container.innerHTML = '';
+            const empty = document.getElementById('emptyDebtState');
+            if(debts.length === 0) { empty.classList.remove('hidden'); return; }
+            empty.classList.add('hidden');
+
+            debts.forEach(d => {
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white p-3 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
+                        <div>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded ${d.type==='borrow'?'bg-rose-100 text-rose-600':'bg-emerald-100 text-emerald-600'}">${d.type==='borrow'?'Hutang':'Piutang'}</span>
+                            <p class="font-bold text-xs text-gray-800 mt-1">${d.name}</p>
+                            <p class="text-xs font-extrabold text-gray-600">${formatter.format(d.amount)}</p>
+                        </div>
+                        <button onclick="deleteDebt(${d.id})" class="bg-gray-100 text-gray-500 hover:text-red-500 px-3 py-1.5 rounded-xl text-[10px] font-bold">Lunas</button>
+                    </div>
+                `);
+            });
+        }
+
+        document.getElementById('debtForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const type = document.querySelector('input[name="debtType"]:checked').value;
+            const name = document.getElementById('debtName').value;
+            const amount = parseInt(document.getElementById('debtAmount').value);
+            debts.push({ id: Date.now(), type, name, amount });
+            localStorage.setItem('dompet_pro_debts', JSON.stringify(debts));
+            closeAllModals();
+            renderDebts();
+            e.target.reset();
+        });
+
+        function deleteDebt(id) {
+            debts = debts.filter(d => d.id !== id);
+            localStorage.setItem('dompet_pro_debts', JSON.stringify(debts));
+            renderDebts();
+        }
+
+        document.getElementById('walletForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const val = document.getElementById('newWalletName').value.trim();
+            if(!val) return;
+            accounts.push({ id: 'acc_'+Date.now(), name: val, icon: 'fa-wallet' });
+            document.getElementById('newWalletName').value = '';
+            updateUI();
+        });
+
+        function deleteWallet(id) {
+            if(confirm('Hapus dompet ini?')) { accounts = accounts.filter(a => a.id !== id); updateUI(); }
+        }
+
+        function saveBudget() {
+            const val = parseInt(document.getElementById('inputMonthlyBudget').value);
+            if(val) { monthlyBudget = val; localStorage.setItem('dompet_pro_budget', monthlyBudget); updateUI(); alert('Anggaran berhasil diperbarui!'); closeAllModals(); }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ accounts, transactions, debts, monthlyBudget }));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "Backup_Keuangan_" + new Date().toISOString().slice(0,10) + ".json");
+            dlAnchor.click();
+        }
+
+        function importData(event) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if(parsed.transactions) {
+                        accounts = parsed.accounts || accounts;
+                        transactions = parsed.transactions || transactions;
+                        debts = parsed.debts || debts;
+                        monthlyBudget = parsed.monthlyBudget || monthlyBudget;
+                        updateUI();
+                        alert('Data berhasil dipulihkan!');
+                        closeAllModals();
+                    }
+                } catch(err) { alert('Format file tidak valid!'); }
+            };
+            reader.readAsText(event.target.files[0]);
+        }
+
+        function openDetailModal(id) {
+            const tx = transactions.find(t => t.id === id);
+            if(!tx) return;
+            selectedTxId = id;
+
+            const typeBadge = document.getElementById('detTypeBadge');
+            const categoryEl = document.getElementById('detCategory');
+            const amountEl = document.getElementById('detAmount');
+            const dateEl = document.getElementById('detDate');
+            const accountEl = document.getElementById('detAccount');
+            const noteEl = document.getElementById('detNote');
+
+            if (tx.type === 'income') {
+                typeBadge.className = "inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] mb-1 uppercase bg-emerald-100 text-emerald-600";
+                typeBadge.textContent = "Pemasukan";
+                amountEl.className = "text-2xl font-black mt-1 text-emerald-600";
+                amountEl.textContent = "+" + formatter.format(tx.amount);
+            } else if (tx.type === 'expense') {
+                typeBadge.className = "inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] mb-1 uppercase bg-rose-100 text-rose-600";
+                typeBadge.textContent = "Pengeluaran";
+                amountEl.className = "text-2xl font-black mt-1 text-rose-600";
+                amountEl.textContent = "-" + formatter.format(tx.amount);
+            } else {
+                typeBadge.className = "inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] mb-1 uppercase bg-blue-100 text-blue-600";
+                typeBadge.textContent = "Transfer Internal";
+                amountEl.className = "text-2xl font-black mt-1 text-blue-600";
+                amountEl.textContent = formatter.format(tx.amount);
+            }
+
+            categoryEl.textContent = tx.type === 'transfer' ? 'Transfer Antar Dompet' : tx.category;
+            dateEl.textContent = tx.date;
+            
+            if(tx.type === 'transfer') {
+                let fromName = accounts.find(a => a.id === tx.fromAccount)?.name || '';
+                let toName = accounts.find(a => a.id === tx.toAccount)?.name || '';
+                accountEl.textContent = `${fromName} ➔ ${toName}`;
+            } else {
+                accountEl.textContent = accounts.find(a => a.id === tx.account)?.name || '-';
+            }
+
+            noteEl.textContent = tx.note ? tx.note : '-';
+
+            closeAllModals();
+            document.getElementById('modalOverlay').classList.add('open');
+            document.getElementById('detailModal').classList.add('open');
+        }
+
+        function deleteTxFromDetail() {
+            if(confirm('Hapus transaksi ini?')) {
+                transactions = transactions.filter(t => t.id !== selectedTxId);
+                updateUI();
+                closeAllModals();
+            }
+        }
+
+        function resetData() { if(confirm('Reset semua data aplikasi?')) { transactions = []; debts = []; updateUI(); } }
+
+        function openModal() { closeAllModals(); setDefaultDate(); document.getElementById('modalOverlay').classList.add('open'); document.getElementById('addModal').classList.add('open'); }
+        function openWalletModal() { closeAllModals(); document.getElementById('modalOverlay').classList.add('open'); document.getElementById('walletModal').classList.add('open'); }
+        function openMenuModal() { closeAllModals(); document.getElementById('modalOverlay').classList.add('open'); document.getElementById('menuModal').classList.add('open'); }
+        function openDebtModal() { closeAllModals(); document.getElementById('modalOverlay').classList.add('open'); document.getElementById('debtModal').classList.add('open'); }
+        function closeAllModals() { document.querySelectorAll('.overlay, .bottom-sheet').forEach(el => el.classList.remove('open')); }
+
+        setDefaultDate();
+        handleTypeChange();
+        updateUI();
+    </script>
+</body>
+</html>
