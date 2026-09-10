@@ -42,6 +42,74 @@
         .bottom-sheet.open { transform: translateY(0); }
         .overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .overlay.open { opacity: 1; pointer-events: auto; }
+
+        /* Cross-device form sizing
+           Prevent browser-native date controls from forcing a column wider
+           than its grid track (Chrome/Android, Safari/iOS, Firefox/desktop). */
+        *, *::before, *::after { box-sizing: border-box; }
+
+        .date-category-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 0.5rem;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .date-category-grid .form-field {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .date-category-grid.date-category-single {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .form-control {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Native date inputs have browser-specific intrinsic sizing. */
+        input[type="date"] {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+            display: block;
+        }
+
+        /* Keep the date text/control compact without changing its functionality. */
+        .date-control {
+            font-size: 12px;
+            line-height: 1.25rem;
+            padding-left: 0.625rem;
+            padding-right: 0.625rem;
+        }
+
+        input, select, button, textarea { max-width: 100%; }
+
+        @media (max-width: 360px) {
+            .date-control {
+                font-size: 11px;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            /* The app remains centered and the form never lets native controls
+               expand beyond their assigned column on tablets/laptops. */
+            .date-category-grid {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            }
+        }
         input[type="radio"]:checked + .account-label {
             border-color: #3b82f6;
             background-color: #eff6ff;
@@ -230,7 +298,7 @@
         <div id="modalOverlay" class="overlay absolute inset-0 bg-gray-900/40 backdrop-blur-sm z-30" onclick="closeAllModals()"></div>
 
         <!-- 1. MODAL TAMBAH TRANSAKSI -->
-        <div id="addModal" class="bottom-sheet absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-40 p-5 pb-8 flex flex-col max-h-[90%]">
+        <div id="addModal" class="bottom-sheet absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-40 p-5 pb-8 flex flex-col max-h-[90%] overflow-x-hidden min-w-0">
             <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-3 shrink-0"></div>
             
             <div class="flex justify-center items-center mb-3 shrink-0 relative">
@@ -238,7 +306,7 @@
                 <button onclick="closeAllModals()" type="button" class="absolute right-0 w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-gray-500"><i class="fa-solid fa-xmark text-xs"></i></button>
             </div>
 
-            <form id="transactionForm" class="flex flex-col gap-3 overflow-y-auto px-1 pb-2">
+            <form id="transactionForm" class="flex flex-col gap-3 overflow-y-auto overflow-x-hidden min-w-0 px-1 pb-2">
                 
                 <div class="flex bg-gray-100 p-1 rounded-xl">
                     <input type="radio" name="type" id="typeExpense" value="expense" class="hidden" checked onchange="handleTypeChange()">
@@ -251,17 +319,17 @@
                     <label for="typeTransfer" id="lblTransfer" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all">Transfer</label>
                 </div>
 
-                <div id="normalAccountBox">
+                <div id="normalAccountBox" class="min-w-0">
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Pilih Dompet</label>
-                    <div id="accountRadioContainer" class="grid grid-cols-2 gap-1.5"></div>
+                    <div id="accountRadioContainer" class="grid grid-cols-2 gap-1.5 min-w-0"></div>
                 </div>
 
-                <div id="transferAccountBox" class="hidden flex gap-2">
-                    <div class="flex-1 w-0">
+                <div id="transferAccountBox" class="hidden flex flex-wrap gap-2 min-w-0">
+                    <div class="flex-1 min-w-[140px]">
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dari Dompet</label>
                         <select id="transferFrom" class="w-full bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2.5 outline-none"></select>
                     </div>
-                    <div class="flex-1 w-0">
+                    <div class="flex-1 min-w-[140px]">
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Ke Dompet</label>
                         <select id="transferTo" class="w-full bg-gray-50 border border-gray-200 text-xs font-semibold rounded-xl p-2.5 outline-none"></select>
                     </div>
@@ -271,25 +339,25 @@
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nominal (Rp)</label>
                     <div class="relative">
                         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
-                        <input type="number" id="inputAmount" required inputmode="numeric" placeholder="0" class="w-full bg-gray-50 border border-gray-200 font-bold text-base rounded-xl py-2 pl-10 pr-3 outline-none focus:border-brand-500">
+                        <input type="number" id="inputAmount" required inputmode="numeric" placeholder="0" class="w-full min-w-0 max-w-full box-border bg-gray-50 border border-gray-200 font-bold text-base rounded-xl py-2 pl-10 pr-3 outline-none focus:border-brand-500">
                     </div>
                 </div>
 
-                <!-- Kolom Tanggal & Kategori dengan ukuran flex sama -->
-                <div class="flex gap-2">
-                    <div class="flex-1 w-0">
+                <!-- DIPERBAIKI: Menggunakan grid grid-cols-2 gap-2 yang rapi agar tidak bertumpuk -->
+                <div id="dateCategoryGrid" class="date-category-grid">
+                    <div id="dateBox" class="form-field">
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tanggal</label>
-                        <input type="date" id="inputDate" required class="w-full bg-gray-50 border border-gray-200 font-semibold text-xs rounded-xl py-2 px-2.5 outline-none">
+                        <input type="date" id="inputDate" required class="form-control date-control bg-gray-50 border border-gray-200 font-semibold text-xs rounded-xl py-2 px-2.5 outline-none focus:border-brand-500">
                     </div>
-                    <div id="categoryBox" class="flex-1 w-0">
+                    <div id="categoryBox" class="form-field">
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Kategori</label>
-                        <input type="text" id="inputCategory" placeholder="Makan, Gaji" class="w-full bg-gray-50 border border-gray-200 font-semibold text-xs rounded-xl py-2 px-2.5 outline-none">
+                        <input type="text" id="inputCategory" placeholder="Makan, Gaji" class="form-control bg-gray-50 border border-gray-200 font-semibold text-xs rounded-xl py-2 px-2.5 outline-none focus:border-brand-500">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Keterangan (Opsional)</label>
-                    <input type="text" id="inputNote" placeholder="Catatan tambahan..." class="w-full bg-gray-50 border border-gray-200 font-medium text-xs rounded-xl py-2 px-2.5 outline-none">
+                    <input type="text" id="inputNote" placeholder="Catatan tambahan..." class="w-full min-w-0 max-w-full box-border bg-gray-50 border border-gray-200 font-medium text-xs rounded-xl py-2 px-2.5 outline-none focus:border-brand-500">
                 </div>
 
                 <div class="flex gap-2 mt-1">
@@ -427,13 +495,19 @@
             '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
         };
 
-        // Mengambil tanggal hari ini secara akurat berdasarkan zona waktu lokal perangkat
-        function setDefaultDate() {
+        // Mengambil tanggal lokal langsung dari perangkat pengguna.
+        // Tidak menggunakan toISOString() karena fungsi tersebut memakai UTC
+        // dan dapat membuat tanggal mundur/maju satu hari tergantung zona waktu.
+        function getLocalDateString() {
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            document.getElementById('inputDate').value = `${year}-${month}-${day}`;
+            return `${year}-${month}-${day}`;
+        }
+
+        function setDefaultDate() {
+            document.getElementById('inputDate').value = getLocalDateString();
         }
 
         function switchTab(tab) {
@@ -494,7 +568,14 @@
 
             document.getElementById('normalAccountBox').style.display = isTrf ? 'none' : 'block';
             document.getElementById('transferAccountBox').style.display = isTrf ? 'flex' : 'none';
-            document.getElementById('categoryBox').style.display = isTrf ? 'none' : 'block';
+
+            const categoryBox = document.getElementById('categoryBox');
+            const dateCategoryGrid = document.getElementById('dateCategoryGrid');
+
+            categoryBox.style.display = isTrf ? 'none' : 'block';
+            dateCategoryGrid.className = isTrf
+                ? 'date-category-grid date-category-single'
+                : 'date-category-grid';
 
             if(isTrf) {
                 let optionsHtml = '';
@@ -639,8 +720,7 @@
                 return matchAcc && matchSearch;
             });
 
-            const nowLocal = new Date();
-            const currentMonthStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}`;
+            const currentMonthStr = new Date().toISOString().slice(0, 7);
             let monthlyExpense = 0;
             transactions.forEach(t => {
                 if(t.type === 'expense' && t.date.startsWith(currentMonthStr)) monthlyExpense += t.amount;
@@ -662,7 +742,10 @@
                 document.getElementById('emptyState').classList.add('hidden');
                 document.getElementById('emptyState').classList.remove('flex');
 
-                const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const sorted = [...filtered].sort((a, b) => {
+                    const dateDiff = new Date(b.date) - new Date(a.date);
+                    return dateDiff !== 0 ? dateDiff : (b.id || 0) - (a.id || 0);
+                });
                 let lastMonthKey = '';
 
                 sorted.forEach(t => {
