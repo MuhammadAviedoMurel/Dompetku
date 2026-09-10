@@ -275,7 +275,7 @@
                     </div>
                 </div>
 
-                <!-- Kolom Tanggal & Kategori dengan ikon kalender normal -->
+                <!-- Kolom Tanggal & Kategori dengan ukuran flex sama -->
                 <div class="flex gap-2">
                     <div class="flex-1 w-0">
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tanggal</label>
@@ -427,8 +427,13 @@
             '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
         };
 
+        // Mengambil tanggal hari ini secara akurat berdasarkan zona waktu lokal perangkat
         function setDefaultDate() {
-            document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            document.getElementById('inputDate').value = `${year}-${month}-${day}`;
         }
 
         function switchTab(tab) {
@@ -634,7 +639,8 @@
                 return matchAcc && matchSearch;
             });
 
-            const currentMonthStr = new Date().toISOString().slice(0, 7);
+            const nowLocal = new Date();
+            const currentMonthStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}`;
             let monthlyExpense = 0;
             transactions.forEach(t => {
                 if(t.type === 'expense' && t.date.startsWith(currentMonthStr)) monthlyExpense += t.amount;
