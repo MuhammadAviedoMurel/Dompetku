@@ -50,7 +50,7 @@
 
         .date-category-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
             gap: 0.5rem;
             width: 100%;
             min-width: 0;
@@ -87,7 +87,7 @@
 
         /* Keep the date text/control compact without changing its functionality. */
         .date-control {
-            font-size: 12px;
+            font-size: 11px;
             line-height: 1.25rem;
             padding-left: 0.625rem;
             padding-right: 0.625rem;
@@ -95,11 +95,15 @@
 
         input, select, button, textarea { max-width: 100%; }
 
-        @media (max-width: 360px) {
+        @media (max-width: 380px) {
+            /* Layar HP sangat sempit: susun vertikal agar tanggal tidak terpotong. */
+            .date-category-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
             .date-control {
-                font-size: 11px;
-                padding-left: 0.5rem;
-                padding-right: 0.5rem;
+                font-size: 12px;
+                padding-left: 0.625rem;
+                padding-right: 0.625rem;
             }
         }
 
@@ -466,7 +470,10 @@
                         <span id="detNote" class="font-medium text-gray-700 text-right max-w-[200px] break-words"></span>
                     </div>
                 </div>
-                <button onclick="deleteTxFromDetail()" class="w-full bg-rose-50 text-rose-600 border border-rose-200 font-bold py-3 rounded-xl text-xs active:scale-95 transition">Hapus Transaksi Ini</button>
+                <div class="flex gap-2">
+                    <button onclick="editCategoryFromDetail()" class="flex-1 bg-brand-50 text-brand-600 border border-brand-200 font-bold py-3 rounded-xl text-xs active:scale-95 transition"><i class="fa-solid fa-pen mr-1"></i> Edit Kategori</button>
+                    <button onclick="deleteTxFromDetail()" class="flex-1 bg-rose-50 text-rose-600 border border-rose-200 font-bold py-3 rounded-xl text-xs active:scale-95 transition"><i class="fa-solid fa-trash mr-1"></i> Hapus Transaksi</button>
+                </div>
             </div>
         </div>
 
@@ -1008,6 +1015,26 @@
             closeAllModals();
             document.getElementById('modalOverlay').classList.add('open');
             document.getElementById('detailModal').classList.add('open');
+        }
+
+        function editCategoryFromDetail() {
+            const tx = transactions.find(t => t.id === selectedTxId);
+            if (!tx || tx.type === 'transfer') return;
+
+            const currentCategory = tx.category || 'Umum';
+            const newCategory = prompt('Ubah nama kategori:', currentCategory);
+            if (newCategory === null) return;
+
+            const cleanedCategory = newCategory.trim();
+            if (!cleanedCategory) {
+                alert('Nama kategori tidak boleh kosong.');
+                return;
+            }
+
+            tx.category = cleanedCategory;
+            localStorage.setItem('dompet_pro_tx', JSON.stringify(transactions));
+            updateUI();
+            openDetailModal(tx.id);
         }
 
         function deleteTxFromDetail() {
