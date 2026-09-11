@@ -43,9 +43,6 @@
         .overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .overlay.open { opacity: 1; pointer-events: auto; }
 
-        /* Cross-device form sizing
-           Prevent browser-native date controls from forcing a column wider
-           than its grid track (Chrome/Android, Safari/iOS, Firefox/desktop). */
         *, *::before, *::after { box-sizing: border-box; }
 
         .date-category-grid {
@@ -76,7 +73,6 @@
             box-sizing: border-box;
         }
 
-        /* Native date inputs have browser-specific intrinsic sizing. */
         input[type="date"] {
             width: 100%;
             min-width: 0;
@@ -85,7 +81,6 @@
             display: block;
         }
 
-        /* Keep the date text/control compact without changing its functionality. */
         .date-control {
             font-size: 11px;
             line-height: 1.25rem;
@@ -96,7 +91,6 @@
         input, select, button, textarea { max-width: 100%; }
 
         @media (max-width: 380px) {
-            /* Layar HP sangat sempit: susun vertikal agar tanggal tidak terpotong. */
             .date-category-grid {
                 grid-template-columns: minmax(0, 1fr);
             }
@@ -108,8 +102,6 @@
         }
 
         @media (min-width: 768px) {
-            /* The app remains centered and the form never lets native controls
-               expand beyond their assigned column on tablets/laptops. */
             .date-category-grid {
                 grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             }
@@ -343,11 +335,10 @@
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nominal (Rp)</label>
                     <div class="relative">
                         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rp</span>
-                        <input type="number" id="inputAmount" required inputmode="numeric" placeholder="0" class="w-full min-w-0 max-w-full box-border bg-gray-50 border border-gray-200 font-bold text-base rounded-xl py-2 pl-10 pr-3 outline-none focus:border-brand-500">
+                        <input type="number" id="inputAmount" required min="1" inputmode="numeric" placeholder="0" class="w-full min-w-0 max-w-full box-border bg-gray-50 border border-gray-200 font-bold text-base rounded-xl py-2 pl-10 pr-3 outline-none focus:border-brand-500">
                     </div>
                 </div>
 
-                <!-- DIPERBAIKI: Menggunakan grid grid-cols-2 gap-2 yang rapi agar tidak bertumpuk -->
                 <div id="dateCategoryGrid" class="date-category-grid">
                     <div id="dateBox" class="form-field">
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tanggal</label>
@@ -407,8 +398,8 @@
                 <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
                     <p class="font-bold text-xs text-gray-800 mb-1"><i class="fa-solid fa-cloud-arrow-down text-emerald-500 mr-1"></i> Cadangkan & Pulihkan Data</p>
                     <div class="flex gap-2 mt-2">
-                        <button onclick="exportData()" class="flex-1 bg-emerald-600 text-white font-bold text-xs py-2 rounded-xl"><i class="fa-solid fa-download mr-1"></i> Unduh File</button>
-                        <label class="flex-1 bg-blue-600 text-white font-bold text-xs py-2 rounded-xl text-center cursor-pointer">
+                        <button onclick="exportData()" class="flex-1 bg-emerald-600 text-white font-bold text-xs py-2 rounded-xl shadow-sm"><i class="fa-solid fa-download mr-1"></i> Unduh File</button>
+                        <label class="flex-1 bg-blue-600 text-white font-bold text-xs py-2 rounded-xl text-center cursor-pointer shadow-sm">
                             <i class="fa-solid fa-upload mr-1"></i> Pulihkan <input type="file" id="importFile" accept=".json" onchange="importData(event)" class="hidden">
                         </label>
                     </div>
@@ -437,7 +428,7 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Jumlah (Rp)</label>
-                    <input type="number" id="debtAmount" required inputmode="numeric" placeholder="0" class="w-full bg-gray-50 border border-gray-200 text-xs font-bold rounded-xl p-2.5 outline-none">
+                    <input type="number" id="debtAmount" required min="1" inputmode="numeric" placeholder="0" class="w-full bg-gray-50 border border-gray-200 text-xs font-bold rounded-xl p-2.5 outline-none">
                 </div>
                 <button type="submit" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl text-xs mt-1">Simpan Catatan Hutang</button>
             </form>
@@ -470,10 +461,12 @@
                         <span id="detNote" class="font-medium text-gray-700 text-right max-w-[200px] break-words"></span>
                     </div>
                 </div>
+                <!-- Tambahan Fitur Edit Nominal dalam flex agar memanjang rapi -->
                 <div class="flex gap-2">
-                    <button onclick="editCategoryFromDetail()" class="flex-1 bg-brand-50 text-brand-600 border border-brand-200 font-bold py-3 rounded-xl text-xs active:scale-95 transition"><i class="fa-solid fa-pen mr-1"></i> Edit Kategori</button>
-                    <button onclick="deleteTxFromDetail()" class="flex-1 bg-rose-50 text-rose-600 border border-rose-200 font-bold py-3 rounded-xl text-xs active:scale-95 transition"><i class="fa-solid fa-trash mr-1"></i> Hapus Transaksi</button>
+                    <button id="btnEditCategory" onclick="editCategoryFromDetail()" class="flex-1 bg-brand-50 text-brand-600 border border-brand-200 font-bold py-2.5 rounded-xl text-xs active:scale-95 transition"><i class="fa-solid fa-pen mr-1"></i> Edit Kategori</button>
+                    <button id="btnEditAmount" onclick="editAmountFromDetail()" class="flex-1 bg-amber-50 text-amber-600 border border-amber-200 font-bold py-2.5 rounded-xl text-xs active:scale-95 transition"><i class="fa-solid fa-pen-to-square mr-1"></i> Edit Nominal</button>
                 </div>
+                <button onclick="deleteTxFromDetail()" class="w-full bg-rose-50 text-rose-600 border border-rose-200 font-bold py-3 rounded-xl text-xs active:scale-95 transition"><i class="fa-solid fa-trash mr-1"></i> Hapus Transaksi</button>
             </div>
         </div>
 
@@ -502,9 +495,6 @@
             '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
         };
 
-        // Mengambil tanggal lokal langsung dari perangkat pengguna.
-        // Tidak menggunakan toISOString() karena fungsi tersebut memakai UTC
-        // dan dapat membuat tanggal mundur/maju satu hari tergantung zona waktu.
         function getLocalDateString() {
             const now = new Date();
             const year = now.getFullYear();
@@ -727,7 +717,8 @@
                 return matchAcc && matchSearch;
             });
 
-            const currentMonthStr = new Date().toISOString().slice(0, 7);
+            const nowLocal = new Date();
+            const currentMonthStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}`;
             let monthlyExpense = 0;
             transactions.forEach(t => {
                 if(t.type === 'expense' && t.date.startsWith(currentMonthStr)) monthlyExpense += t.amount;
@@ -920,9 +911,11 @@
         });
 
         function deleteDebt(id) {
-            debts = debts.filter(d => d.id !== id);
-            localStorage.setItem('dompet_pro_debts', JSON.stringify(debts));
-            renderDebts();
+            if(confirm('Tandai hutang ini sebagai Lunas?\n\n(Catatan: Uang di dompet Anda tidak akan bertambah/berkurang otomatis. Silakan lakukan pencatatan transaksi manual jika melibatkan uang di dompet).')) {
+                debts = debts.filter(d => d.id !== id);
+                localStorage.setItem('dompet_pro_debts', JSON.stringify(debts));
+                renderDebts();
+            }
         }
 
         document.getElementById('walletForm').addEventListener('submit', (e) => {
@@ -935,7 +928,16 @@
         });
 
         function deleteWallet(id) {
-            if(confirm('Hapus dompet ini?')) { accounts = accounts.filter(a => a.id !== id); updateUI(); }
+            const isUsed = transactions.some(t => t.account === id || t.fromAccount === id || t.toAccount === id);
+            if (isUsed) {
+                alert('Gagal! Dompet ini tidak bisa dihapus karena masih terkait dengan riwayat transaksi yang ada.');
+                return;
+            }
+            
+            if(confirm('Hapus dompet ini?')) { 
+                accounts = accounts.filter(a => a.id !== id); 
+                updateUI(); 
+            }
         }
 
         function saveBudget() {
@@ -943,12 +945,45 @@
             if(val) { monthlyBudget = val; localStorage.setItem('dompet_pro_budget', monthlyBudget); updateUI(); alert('Anggaran berhasil diperbarui!'); closeAllModals(); }
         }
 
-        function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ accounts, transactions, debts, monthlyBudget }));
+        // PERBAIKAN FITUR DOWNLOAD / EXPORT AGAR MENDUKUNG PWA & BROWSER HP (MENGGUNAKAN BLOB DAN WEB SHARE API)
+        async function exportData() {
+            const dataObj = { accounts, transactions, debts, monthlyBudget };
+            const dataStr = JSON.stringify(dataObj, null, 2);
+            const fileName = "Backup_Keuangan_" + new Date().toISOString().slice(0,10) + ".json";
+            
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const file = new File([blob], fileName, { type: "application/json" });
+
+            // Coba gunakan Web Share API (Sangat ampuh untuk aplikasi yang dipasang di Home Screen HP / PWA)
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Backup Data DompetKu Pro',
+                        text: 'File backup data keuangan Anda.'
+                    });
+                    closeAllModals();
+                    return; // Jika berhasil membagikan/menyimpan lewat pop-up sistem, maka selesai.
+                } catch (err) {
+                    console.log('Share dibatalkan pengguna atau gagal, mencoba unduhan normal...');
+                    // Berlanjut ke proses Blob tradisional jika user membatalkan (cancel) Share.
+                }
+            }
+            
+            // Proses unduhan tradisional menggunakan Blob URL (untuk Browser PC atau HP tanpa Web Share)
+            const url = URL.createObjectURL(blob);
             const dlAnchor = document.createElement('a');
-            dlAnchor.setAttribute("href", dataStr);
-            dlAnchor.setAttribute("download", "Backup_Keuangan_" + new Date().toISOString().slice(0,10) + ".json");
+            dlAnchor.href = url;
+            dlAnchor.download = fileName;
+            document.body.appendChild(dlAnchor);
             dlAnchor.click();
+            
+            // Bersihkan objek setelah diunduh
+            setTimeout(() => {
+                document.body.removeChild(dlAnchor);
+                URL.revokeObjectURL(url);
+                closeAllModals();
+            }, 100);
         }
 
         function importData(event) {
@@ -1012,6 +1047,13 @@
 
             noteEl.textContent = tx.note ? tx.note : '-';
 
+            const btnEditCat = document.getElementById('btnEditCategory');
+            if (tx.type === 'transfer') {
+                btnEditCat.style.display = 'none'; // Sembunyikan untuk transfer
+            } else {
+                btnEditCat.style.display = 'block'; // Tampilkan kembali
+            }
+
             closeAllModals();
             document.getElementById('modalOverlay').classList.add('open');
             document.getElementById('detailModal').classList.add('open');
@@ -1032,6 +1074,31 @@
             }
 
             tx.category = cleanedCategory;
+            localStorage.setItem('dompet_pro_tx', JSON.stringify(transactions));
+            updateUI();
+            openDetailModal(tx.id);
+        }
+
+        // FITUR BARU: Edit Nominal Uang
+        function editAmountFromDetail() {
+            const tx = transactions.find(t => t.id === selectedTxId);
+            if (!tx) return;
+
+            const currentAmount = tx.amount;
+            const inputAmount = prompt('Koreksi dan masukkan angka nominal yang benar (Rp):', currentAmount);
+            if (inputAmount === null) return; // Batal ditekan
+
+            // Hanya mengambil angka dari inputan pengguna
+            const newAmount = parseInt(inputAmount.replace(/[^0-9]/g, ''));
+            
+            if (!newAmount || newAmount <= 0) {
+                alert('Masukan tidak valid! Harus berupa angka dan lebih dari 0.');
+                return;
+            }
+
+            tx.amount = newAmount;
+            
+            // Simpan, Kalkulasi ulang seluruh saldo di updateUI(), dan Refresh Modalnya
             localStorage.setItem('dompet_pro_tx', JSON.stringify(transactions));
             updateUI();
             openDetailModal(tx.id);
