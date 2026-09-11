@@ -26,6 +26,19 @@
                 }
             }
         }
+        function handleDebtTypeChange() {
+            const isBorrow = document.getElementById('debtBorrow').checked;
+            const lblBorrow = document.getElementById('lblDebtBorrow');
+            const lblLend = document.getElementById('lblDebtLend');
+
+            if (isBorrow) {
+                lblBorrow.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-rose-600 transition-all";
+                lblLend.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all";
+            } else {
+                lblBorrow.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all";
+                lblLend.className = "flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-emerald-600 transition-all";
+            }
+        }
     </script>
     <style>
         body { background-color: #e5e7eb; -webkit-tap-highlight-color: transparent; }
@@ -107,6 +120,11 @@
             }
         }
         input[type="radio"]:checked + .account-label {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #2563eb;
+        }
+        input[type="radio"]:checked + .debt-label {
             border-color: #3b82f6;
             background-color: #eff6ff;
             color: #2563eb;
@@ -416,11 +434,12 @@
                 <button onclick="closeAllModals()" type="button" class="absolute right-0 w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-gray-500"><i class="fa-solid fa-xmark text-xs"></i></button>
             </div>
             <form id="debtForm" class="flex flex-col gap-3 overflow-y-auto px-1">
-                <div class="flex bg-gray-100 p-1 rounded-xl">
-                    <input type="radio" name="debtType" id="debtBorrow" value="borrow" class="hidden" checked>
-                    <label for="debtBorrow" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-rose-600">Kita Berhutang</label>
-                    <input type="radio" name="debtType" id="debtLend" value="lend" class="hidden">
-                    <label for="debtLend" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500">Orang Hutang ke Kita</label>
+                <div class="flex bg-gray-100 p-1 rounded-xl gap-1">
+                    <input type="radio" name="debtType" id="debtBorrow" value="borrow" class="hidden" checked onchange="handleDebtTypeChange()">
+                    <label for="debtBorrow" id="lblDebtBorrow" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer bg-white shadow text-rose-600 transition-all">Kita Berhutang</label>
+                    
+                    <input type="radio" name="debtType" id="debtLend" value="lend" class="hidden" onchange="handleDebtTypeChange()">
+                    <label for="debtLend" id="lblDebtLend" class="flex-1 text-center py-2 rounded-lg font-semibold text-xs cursor-pointer text-gray-500 transition-all">Orang Hutang ke Kita</label>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Orang / Sumber</label>
